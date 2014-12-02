@@ -11,12 +11,24 @@ class ShadowInfo
 
 
 public:
-	ShadowInfo(const Matrix4f& projection) :
-		m_projection(projection) {}
+	ShadowInfo(const Matrix4f& projection, float bias, bool flipFaces) :
+		m_projection(projection),
+		m_bias(bias),
+		m_flipFaces(flipFaces) {}
 
 	inline Matrix4f GetProjection(){ return m_projection; }
+	
+	//Artifact handling
+	inline float GetBias(){ return m_bias; }
+	inline bool GetFlipFaces(){ return m_flipFaces; }
+
 protected:
 private:
+	
+	//Artifact handling
+	float m_bias;
+	bool m_flipFaces;
+
 	Matrix4f m_projection;
 };
 

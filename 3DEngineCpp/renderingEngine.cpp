@@ -79,12 +79,23 @@ void RenderingEngine::Render(GameObject* object)
 
 			m_lightMatrix = m_altCamera->GetViewProjection();
 
+			//Artifact handling
+			SetVector3f("shadowTexelSize", Vector3f(1.0f / 1024.0f, 1.0f / 1024.0f, 0.0f));
+			SetFloat("shadowBias", shadowInfo->GetBias()/1024.0f); //divided by shadowmapsize (hardcoded)
+			bool flipFaces = shadowInfo->GetFlipFaces();
+
 			Camera* temp = m_mainCamera;
 			m_mainCamera = m_altCamera;
 
+			//Artifact handling
+			if(flipFaces)
+				glCullFace(GL_FRONT);
+
 			object->RenderAll(m_shadowMapShader, this);
 
-
+			//Artifact handling
+			if (flipFaces)
+				glCullFace(GL_BACK);
 
 			m_mainCamera = temp;
 
