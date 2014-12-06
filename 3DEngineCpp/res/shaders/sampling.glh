@@ -4,12 +4,14 @@ vec2 CalcParallaxTexCoords(sampler2D dispMap, mat3 tbnMatrix, vec3 directionToEy
 	return texCoords.xy + (directionToEye * tbnMatrix).xy * (texture2D(dispMap, texCoords.xy).r * scale + bias);
 }
 
+//compare is distance to closest point
 float SampleShadowMap(sampler2D shadowMap, vec2 coords, float compare)
 {
 	//zero if farther away from light return 0.0, closer return 1.0 (Texture2d.r is luminance)
 	return step(compare, texture2D(shadowMap, coords.xy).r);
 }
 
+//compare is distance to closest point
 float SampleShadowMapLinear(sampler2D shadowMap, vec2 coords, float compare, vec2 texelSize)
 {
 	vec2 pixelPos = coords/texelSize + vec2(0.5);
@@ -26,6 +28,7 @@ float SampleShadowMapLinear(sampler2D shadowMap, vec2 coords, float compare, vec
 	return mix(mixA, mixB, fracPart.x);
 }
 
+//compare is distance to closest point
 //THIS IS PCF!
 float SampleShadowMapPCF(sampler2D shadowMap, vec2 coords, float compare, vec2 texelSize)
 {
@@ -45,4 +48,21 @@ float SampleShadowMapPCF(sampler2D shadowMap, vec2 coords, float compare, vec2 t
 	}
 	//divide by 9 cause 9 samples in the forloops.
 	return (result/NUM_SAMPLES_SQUARED);
+}
+
+
+//compare is distance to closest point
+float SampleVarianceShadowMap(sampler2D shadowMap, vec2 coords, float compare)
+{
+	vec2 moments = texture2D(shadowMap, coords.xy).xy;
+
+	float p = step(compare, moments.x);
+	//its zero!
+	float variance = max(moments.y - moments.x * moments.x, 0.000002);
+
+	float d = compare - moments.x;
+	float pMax = variance / (variance + d*d);
+
+	return min(max(p, pMax), 1.0);
+
 }

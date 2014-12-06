@@ -11,7 +11,7 @@ uniform float dispMapScale;
 uniform float dispMapBias;
 
 uniform sampler2D R_shadowMap;
-uniform float R_shadowBias;
-uniform vec3 R_shadowTexelSize;
+//PCF uniform float R_shadowBias;
+//PCF uniform vec3 R_shadowTexelSize;
 
 #include "lighting.glh"

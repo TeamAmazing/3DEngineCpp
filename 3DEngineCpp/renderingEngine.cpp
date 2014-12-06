@@ -15,7 +15,10 @@ RenderingEngine::RenderingEngine()
 	
 	SetVector3f("ambient", Vector3f(0.2f, 0.2f, 0.2f));
 	//1024*1024 hardcoded upper bound. Setting the shadowmap.
-	SetTexture("shadowMap", new Texture(1024, 1024, 0, GL_TEXTURE_2D, GL_NEAREST, GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT, true, GL_DEPTH_ATTACHMENT));
+	// PCF - SetTexture("shadowMap", new Texture(1024, 1024, 0, GL_TEXTURE_2D, GL_NEAREST, GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT, true, GL_DEPTH_ATTACHMENT));
+	//Variance
+	SetTexture("shadowMap", new Texture(1024, 1024, 0, GL_TEXTURE_2D, GL_LINEAR, GL_RG32F, GL_RGBA, true, GL_COLOR_ATTACHMENT0));
+
 	m_defaultShader = new Shader("forward-ambient");
 	m_shadowMapShader = new Shader("shadowMapGenerator");
 	
