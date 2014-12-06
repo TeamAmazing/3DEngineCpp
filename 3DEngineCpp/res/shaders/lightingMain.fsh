@@ -8,7 +8,7 @@ float calcShadowAmount(sampler2D shadowMap, vec4 shadowMapCoordsInitial)
 	//.z is the distance from the light to the vertex being checked (.xy) due to the matrix being transformed. -1/1024 for bias to resolve achne.
 	//PCFreturn SampleShadowMapPCF(shadowMap, shadowMapCoords.xy, shadowMapCoords.z - R_shadowBias, R_shadowTexelSize.xy);
 
-	return SampleVarianceShadowMap(shadowMap, shadowMapCoords.xy, shadowMapCoords.z);	
+	return SampleVarianceShadowMap(shadowMap, shadowMapCoords.xy, shadowMapCoords.z, R_shadowVarianceMin, R_shadowLightBleedingReduction);	
 }
 
 void main()

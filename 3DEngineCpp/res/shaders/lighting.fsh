@@ -14,4 +14,8 @@ uniform sampler2D R_shadowMap;
 //PCF uniform float R_shadowBias;
 //PCF uniform vec3 R_shadowTexelSize;
 
+//VSM variables
+uniform float R_shadowVarianceMin;
+uniform float R_shadowLightBleedingReduction;
+
 #include "lighting.glh"

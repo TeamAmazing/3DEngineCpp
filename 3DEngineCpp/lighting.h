@@ -11,23 +11,35 @@ class ShadowInfo
 
 
 public:
-	ShadowInfo(const Matrix4f& projection, float bias, bool flipFaces) :
+	ShadowInfo(const Matrix4f& projection, bool flipFaces, float shadowSoftness = 1.0f, float lightBleedReductionAmount = 0.2f, float minVariance = 0.00002f) :
 		m_projection(projection),
-		m_bias(bias),
-		m_flipFaces(flipFaces) {}
+		//m_bias(bias),
+		m_flipFaces(flipFaces),
+		m_shadowSoftness(shadowSoftness),
+		m_lightBleedingReductionAmount(lightBleedReductionAmount),
+		m_minVariance(minVariance) {}
 
 	inline Matrix4f GetProjection(){ return m_projection; }
 	
 	//Artifact handling
-	inline float GetBias(){ return m_bias; }
+	// Used for PCF
+	//	inline float GetBias(){ return m_bias; }
 	inline bool GetFlipFaces(){ return m_flipFaces; }
+	inline float GetShadowSoftness() { return m_shadowSoftness; }
+	inline float GetLightBleedReductionAmount() { return m_lightBleedingReductionAmount; }
+	inline float GetMinVariance() { return m_minVariance; }
 
 protected:
 private:
 	
 	//Artifact handling
-	float m_bias;
+	//Used for PCF
+	//float m_bias;
 	bool m_flipFaces;
+
+	float m_shadowSoftness;
+	float m_lightBleedingReductionAmount;
+	float m_minVariance;
 
 	Matrix4f m_projection;
 };

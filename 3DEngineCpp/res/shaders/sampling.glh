@@ -50,18 +50,25 @@ float SampleShadowMapPCF(sampler2D shadowMap, vec2 coords, float compare, vec2 t
 	return (result/NUM_SAMPLES_SQUARED);
 }
 
+float linstep(float low, float high, float v) 
+{
+	// Linear interpolation
+	return clamp((v-low)/(high-low), 0.0, 1.0);
+}
 
 //compare is distance to closest point
-float SampleVarianceShadowMap(sampler2D shadowMap, vec2 coords, float compare)
+float SampleVarianceShadowMap(sampler2D shadowMap, vec2 coords, float compare, float varianceMin, float lightBleedReductionAmount)
 {
 	vec2 moments = texture2D(shadowMap, coords.xy).xy;
 
 	float p = step(compare, moments.x);
 	//its zero!
-	float variance = max(moments.y - moments.x * moments.x, 0.000002);
+	float variance = max(moments.y - moments.x * moments.x, varianceMin);
 
 	float d = compare - moments.x;
-	float pMax = variance / (variance + d*d);
+	float pMax = linstep( lightBleedReductionAmount, 1.0, variance / (variance + d*d));
+	//Clamp hack to avoid light bleeding
+	//float pMax = clamp(variance / (variance + d*d), 0.2, 1.0) - 0.2;
 
 	return min(max(p, pMax), 1.0);
 

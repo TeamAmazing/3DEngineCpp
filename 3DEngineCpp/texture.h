@@ -13,6 +13,9 @@ public:
 	
 	void Bind(int textureNum);
 	void BindAsRenderTarget();
+
+	inline int GetWidth() { return m_width; }
+	inline int GetHeight() { return m_height; }
 	
 	virtual ~TextureData();
 protected:	
@@ -41,6 +44,9 @@ public:
 
 	void Bind(unsigned int unit = 0) const;	
 	void BindAsRenderTarget();
+
+	inline int GetWidth() { return m_textureData->GetWidth(); }
+	inline int GetHeight() { return m_textureData->GetHeight(); }
 protected:
 private:
 	static std::map<std::string, TextureData*> s_resourceMap;

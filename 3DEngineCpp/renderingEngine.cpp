@@ -5,6 +5,7 @@
 #include <GL/glew.h>
 #include "mesh.h"
 #include <cstring>
+#include <cassert>
 
 RenderingEngine::RenderingEngine()
 {
@@ -19,8 +20,13 @@ RenderingEngine::RenderingEngine()
 	//Variance
 	SetTexture("shadowMap", new Texture(1024, 1024, 0, GL_TEXTURE_2D, GL_LINEAR, GL_RG32F, GL_RGBA, true, GL_COLOR_ATTACHMENT0));
 
+	//Extra Variance stuff for filtering
+	SetTexture("shadowMapTempTarget", new Texture(1024, 1024, 0, GL_TEXTURE_2D, GL_LINEAR, GL_RG32F, GL_RGBA, true, GL_COLOR_ATTACHMENT0));
+
 	m_defaultShader = new Shader("forward-ambient");
 	m_shadowMapShader = new Shader("shadowMapGenerator");
+	m_nullFilter = new Shader("filter-null");
+	m_gausBlurFilter = new Shader("filter-gausBLur7x1");
 	
 
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -50,9 +56,48 @@ RenderingEngine::RenderingEngine()
 RenderingEngine::~RenderingEngine() 
 {
 	if(m_defaultShader) delete m_defaultShader;
+	if (m_shadowMapShader) delete m_shadowMapShader;
+	if (m_nullFilter) delete m_nullFilter;
+	if (m_gausBlurFilter) delete m_gausBlurFilter;
 	if(m_altCameraObject) delete m_altCameraObject;
 	if(m_planeMaterial) delete m_planeMaterial;
 	if(m_plane) delete m_plane;
+}
+
+void RenderingEngine::BlurShadowMap(Texture* shadowMap, float blurAmount)
+{
+	SetVector3f("blurScale", Vector3f(1.0f / shadowMap->GetWidth() * blurAmount, 0.0f, 0.0f));
+	ApplyFilter(m_gausBlurFilter, shadowMap, GetTexture("shadowMapTempTarget"));
+
+	SetVector3f("blurScale", Vector3f(0.0f, 1.0f / shadowMap->GetHeight() * blurAmount, 0.0f));
+	ApplyFilter(m_gausBlurFilter, GetTexture("shadowMapTempTarget"), shadowMap);
+}
+
+void RenderingEngine::ApplyFilter(Shader* filter, Texture* source, Texture* dest)
+{
+	//assert(source != dest);
+	if (dest == 0)
+		Window::BindAsRenderTarget();
+	else
+		dest->BindAsRenderTarget();
+
+	SetTexture("filterTexture", source);
+	
+	m_altCamera->SetProjection(Matrix4f().InitIdentity());
+	m_altCamera->GetTransform().SetPos(Vector3f(0, 0, 0));
+	m_altCamera->GetTransform().SetRot(Quaternion(Vector3f(0, 1, 0), ToRadians(180.0f)));
+
+	Camera* temp = m_mainCamera;
+	m_mainCamera = m_altCamera;
+		
+	glClear(GL_DEPTH_BUFFER_BIT);
+	filter->Bind();
+	filter->UpdateUniforms(m_planeTransform, *m_planeMaterial, this);
+	m_plane->Draw();
+	
+	m_mainCamera = temp;
+
+	SetTexture("filterTexture", 0);
 }
 
 void RenderingEngine::Render(GameObject* object)
@@ -82,9 +127,13 @@ void RenderingEngine::Render(GameObject* object)
 
 			m_lightMatrix = m_altCamera->GetViewProjection();
 
+			//for PCF
 			//Artifact handling
-			SetVector3f("shadowTexelSize", Vector3f(1.0f / 1024.0f, 1.0f / 1024.0f, 0.0f));
-			SetFloat("shadowBias", shadowInfo->GetBias()/1024.0f); //divided by shadowmapsize (hardcoded)
+			//SetVector3f("shadowTexelSize", Vector3f(1.0f / 1024.0f, 1.0f / 1024.0f, 0.0f));
+			//SetFloat("shadowBias", shadowInfo->GetBias()/1024.0f); //divided by shadowmapsize (hardcoded)
+
+			SetFloat("shadowVarianceMin", shadowInfo->GetMinVariance());
+			SetFloat("shadowLightBleedingReductionAmount", shadowInfo->GetLightBleedReductionAmount());
 			bool flipFaces = shadowInfo->GetFlipFaces();
 
 			Camera* temp = m_mainCamera;
@@ -102,6 +151,7 @@ void RenderingEngine::Render(GameObject* object)
 
 			m_mainCamera = temp;
 
+			BlurShadowMap(GetTexture("shadowMap"), shadowInfo->GetShadowSoftness());
 		}
 
 		Window::BindAsRenderTarget();
