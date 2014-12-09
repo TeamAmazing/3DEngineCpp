@@ -35,10 +35,12 @@ public:
 	virtual ~RenderingEngine();
 protected:
 private:
+	static const int s_numShadowMaps = 10;
+
 	RenderingEngine(const RenderingEngine& other) {}
 	void operator=(const RenderingEngine& other) {}
 
-	void BlurShadowMap(Texture* shadowMap, float blurAmount);
+	void BlurShadowMap(int shadowMapIndex, float blurAmount);
 	void ApplyFilter(Shader* filter, Texture* source, Texture* dest);
 	
 	Camera* m_mainCamera;
@@ -49,6 +51,9 @@ private:
 	Transform m_planeTransform;
 	Mesh* m_plane;
 	Texture* m_tempTarget;
+
+	Texture* m_shadowMaps[s_numShadowMaps];
+	Texture* m_shadowMapTempTargets[s_numShadowMaps];
 	
 	BaseLight* m_activeLight;
 	Shader* m_defaultShader;

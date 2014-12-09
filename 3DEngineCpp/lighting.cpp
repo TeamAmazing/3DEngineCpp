@@ -28,13 +28,47 @@ void BaseLight::SetShadowInfo(ShadowInfo* shadowInfo)
 	m_shadowInfo = shadowInfo;
 }
 
-DirectionalLight::DirectionalLight(const Vector3f& color, float intensity) :
+ShadowCameraTransform BaseLight::CalcShadowCameraTransform(const Vector3f& mainCameraPos, const Quaternion& mainCameraRot)
+{
+	ShadowCameraTransform result;
+	result.pos = GetTransform().GetTransformedPos();
+	result.rot = GetTransform().GetTransformedRot();
+	return result;
+}
+
+DirectionalLight::DirectionalLight(const Vector3f& color, float intensity, int shadowMapSizeAsPowerOf2, float shadowArea,
+	float shadowSoftness,
+	float lightBleedReductionAmount,
+	float minVariance) :
 	BaseLight(color, intensity)
 {
 	SetShader(new Shader("forward-directional"));
-	//Hardcode values
-	SetShadowInfo( new ShadowInfo(Matrix4f().InitOrthographic(-40, 40, -40, 40, -40, 40), true));
+	
+	this->halfShadowArea = shadowArea / 2.0f;
+
+	if (shadowMapSizeAsPowerOf2 != 0){
+		SetShadowInfo(new ShadowInfo(Matrix4f().InitOrthographic(-halfShadowArea, halfShadowArea, -halfShadowArea, halfShadowArea, -halfShadowArea, halfShadowArea), true, shadowMapSizeAsPowerOf2, shadowSoftness, lightBleedReductionAmount, minVariance));
+	}
 }
+
+ShadowCameraTransform DirectionalLight::CalcShadowCameraTransform(const Vector3f& mainCameraPos, const Quaternion& mainCameraRot)
+{
+	ShadowCameraTransform result;
+	result.pos = mainCameraPos + mainCameraRot.GetForward()* halfShadowArea;
+	result.rot = GetTransform().GetTransformedRot();
+
+	//Fix shimmering.
+	float worldSpaceShadowMapTexelSize = (halfShadowArea * 2.0f)/((float) (1 << GetShadowInfo()->GetShadowMapSizeAsPowerOf2()));
+	Vector3f altCameraPos = result.pos.Rotate(result.rot.Conjugate());
+
+	altCameraPos.SetX(worldSpaceShadowMapTexelSize * floor(altCameraPos.GetX() / worldSpaceShadowMapTexelSize));
+	altCameraPos.SetY(worldSpaceShadowMapTexelSize * floor(altCameraPos.GetY() / worldSpaceShadowMapTexelSize));
+
+	result.pos = altCameraPos.Rotate(result.rot);
+
+	return result;
+}
+
 
 PointLight::PointLight(const Vector3f& color, float intensity, const Attenuation& atten) :
 	BaseLight(color, intensity),
@@ -49,9 +83,17 @@ PointLight::PointLight(const Vector3f& color, float intensity, const Attenuation
 	SetShader(new Shader("forward-point"));
 }
 
-SpotLight::SpotLight(const Vector3f& color, float intensity, const Attenuation& atten, float cutoff) :
+SpotLight::SpotLight(const Vector3f& color, float intensity, const Attenuation& atten, float viewAngle, int shadowMapSizeAsPowerOf2,
+	float shadowSoftness,
+	float lightBleedReductionAmount,
+	float minVariance) :
 	PointLight(color, intensity, atten),
-	cutoff(cutoff) 
+	cutoff(cos(viewAngle / 2))
 {
 	SetShader(new Shader("forward-spot"));
+	if (shadowMapSizeAsPowerOf2 != 0){
+	//cutoff stores a value between -1 and 1. 
+	SetShadowInfo(new ShadowInfo(Matrix4f().InitPerspective(viewAngle, 1.0, 0.1, this->range), false, shadowMapSizeAsPowerOf2, shadowSoftness, lightBleedReductionAmount, minVariance));
+
+	}
 }

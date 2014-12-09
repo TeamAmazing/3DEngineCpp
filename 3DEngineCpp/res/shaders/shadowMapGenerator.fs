@@ -10,5 +10,5 @@ void main()
 
 	//should not be used in basic shadow map generation
 	//PCF gl_FragColor = vec4(gl_FragCoord.z);
-	gl_FragColor = vec4(depth, moment2, 0.0, 0.0);
+	gl_FragColor = vec4(1.0 - depth,1.0 - moment2, 0.0, 0.0);
 }
