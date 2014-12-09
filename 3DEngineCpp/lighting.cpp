@@ -70,24 +70,34 @@ ShadowCameraTransform DirectionalLight::CalcShadowCameraTransform(const Vector3f
 }
 
 
-PointLight::PointLight(const Vector3f& color, float intensity, const Attenuation& atten) :
-	BaseLight(color, intensity),
-	atten(atten)
+PointLight::PointLight(const Vector3f& color, float intensity, const Attenuation& atten,
+	bool isPointLight, 
+	int shadowMapSizeAsPowerOf2,
+	float shadowSoftness,
+	float lightBleedReductionAmount,
+	float minVariance) :
+BaseLight(color, intensity, isPointLight),
+atten(atten)
 {
 	float a = atten.exponent;
 	float b = atten.linear;
 	float c = atten.constant - COLOR_DEPTH * intensity * color.Max();
-	
-	range = (-b + sqrtf(b*b - 4*a*c))/(2*a);
+
+	range = (-b + sqrtf(b*b - 4 * a*c)) / (2 * a);
 
 	SetShader(new Shader("forward-point"));
+
+	if (shadowMapSizeAsPowerOf2 != 0){
+		SetShadowInfo(new ShadowInfo(Matrix4f().InitPerspective(cos(ToRadians(90.0f)), 1.0, 0.1, this->range), false, shadowMapSizeAsPowerOf2, shadowSoftness, lightBleedReductionAmount, minVariance));
+	}
 }
+
 
 SpotLight::SpotLight(const Vector3f& color, float intensity, const Attenuation& atten, float viewAngle, int shadowMapSizeAsPowerOf2,
 	float shadowSoftness,
 	float lightBleedReductionAmount,
 	float minVariance) :
-	PointLight(color, intensity, atten),
+	PointLight(color, intensity, atten, true),
 	cutoff(cos(viewAngle / 2))
 {
 	SetShader(new Shader("forward-spot"));

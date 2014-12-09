@@ -60,7 +60,8 @@ public:
 	Vector3f color;
 	float intensity;
 	
-	BaseLight(const Vector3f& color = Vector3f(0,0,0), float intensity = 0) :
+	
+	BaseLight(const Vector3f& color = Vector3f(0,0,0), float intensity = 0, bool isPointLight = false) :
 		color(color),
 		intensity(intensity),
 		m_shader(0),
@@ -73,6 +74,7 @@ public:
 	virtual void AddToEngine(CoreEngine* engine);	
 	inline Shader* GetShader() { return m_shader; }
 	inline ShadowInfo* GetShadowInfo() { return m_shadowInfo; }
+	inline bool GetIsPointLight(){ return m_isPointLight; }
 
 protected:
 	void SetShader(Shader* shader);
@@ -80,6 +82,8 @@ protected:
 private:
 	BaseLight(BaseLight& other) {}
 	void operator=(BaseLight& other) {}
+
+	bool m_isPointLight;
 
 	Shader* m_shader;
 	//Should cast shadow?
@@ -112,8 +116,12 @@ struct PointLight : public BaseLight
 {
 	Attenuation atten;
 	float range;
+	float cutoff;
 
-	PointLight(const Vector3f& color = Vector3f(0,0,0), float intensity = 0, const Attenuation& atten = Attenuation());
+	PointLight(const Vector3f& color = Vector3f(0, 0, 0), float intensity = 0, const Attenuation& atten = Attenuation(), bool isPointLight = true, int shadowMapSizeAsPowerOf2 = 0,
+		float shadowSoftness = 1.0f,
+		float lightBleedReductionAmount = 0.2f,
+		float minVariance = 0.00002f);
 };
 
 struct SpotLight : public PointLight
